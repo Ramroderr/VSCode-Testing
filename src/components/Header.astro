@@ -1,8 +1,11 @@
 ---
 const navItems = [
   { label: 'Home', href: '/' },
-  { label: 'About', href: '/about' },
-  { label: 'Family', href: '/about/family' },
+  {
+    label: 'About',
+    href: '/about',
+    children: [{ label: 'Family', href: '/about/family' }],
+  },
   { label: 'Services', href: '/services' },
   { label: 'Service Locations', href: '/service-locations' },
   { label: 'Projects', href: '/projects' },
@@ -15,13 +18,86 @@ const navItems = [
 <header>
   <nav aria-label="Main navigation">
     <a href="/" class="brand">Your Brand</a>
-    <ul>
-      {navItems.map((item) => (
-        <li><a href={item.href}>{item.label}</a></li>
-      ))}
+    <ul class="nav-list">
+      {navItems.map((item) => {
+        const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+
+        if (!hasChildren) {
+          return (
+            <li class="nav-item">
+              <a class="nav-link" href={item.href}>{item.label}</a>
+            </li>
+          );
+        }
+
+        const childItems = Array.isArray(item.children) ? item.children : [];
+
+        return (
+          <li class="nav-item dropdown">
+            <button class="nav-button" type="button" aria-expanded="false">
+              <span class="nav-link">{item.label}</span>
+              <span class="caret" aria-hidden="true">▾</span>
+            </button>
+            <ul class="dropdown-menu">
+              {childItems.map((child) => (
+                <li>
+                  <a href={child.href}>{child.label}</a>
+                </li>
+              ))}
+            </ul>
+          </li>
+        );
+      })}
     </ul>
   </nav>
 </header>
+
+<script>
+  const dropdowns = document.querySelectorAll('.dropdown');
+
+  dropdowns.forEach((dropdown) => {
+    const button = dropdown.querySelector('.nav-button');
+    if (!button) return;
+
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const isOpen = dropdown.classList.contains('open');
+
+      dropdowns.forEach((otherDropdown) => {
+        if (otherDropdown !== dropdown) {
+          otherDropdown.classList.remove('open');
+          otherDropdown.querySelector('.nav-button')?.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      if (isOpen) {
+        dropdown.classList.remove('open');
+        button.setAttribute('aria-expanded', 'false');
+        return;
+      }
+
+      dropdown.classList.add('open');
+      button.setAttribute('aria-expanded', 'true');
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+
+    if (!(target instanceof Node)) {
+      return;
+    }
+
+    dropdowns.forEach((dropdown) => {
+      if (!dropdown.contains(target)) {
+        dropdown.classList.remove('open');
+        dropdown.querySelector('.nav-button')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+</script>
 
 <style>
   header {
@@ -46,7 +122,7 @@ const navItems = [
     font-weight: 700;
   }
 
-  ul {
+  .nav-list {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
@@ -55,13 +131,65 @@ const navItems = [
     padding: 0;
   }
 
-  li a {
+  .nav-item {
+    position: relative;
+  }
+
+  .nav-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+  }
+
+  .nav-link,
+  .dropdown-menu a {
     color: #e5e7eb;
     text-decoration: none;
   }
 
-  li a:hover {
+  .nav-link:hover,
+  .dropdown-menu a:hover {
     color: white;
+  }
+
+  .caret {
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    min-width: 180px;
+    background: #1f2937;
+    border-radius: 0.5rem;
+    list-style: none;
+    padding: 0.5rem 0;
+    margin: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+  }
+
+  .dropdown.open .dropdown-menu,
+  .dropdown:hover .dropdown-menu,
+  .dropdown:focus-within .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .dropdown-menu li {
+    padding: 0.25rem 1rem;
   }
 
   @media (max-width: 768px) {
@@ -70,7 +198,7 @@ const navItems = [
       align-items: flex-start;
     }
 
-    ul {
+    .nav-list {
       gap: 0.75rem;
     }
   }
